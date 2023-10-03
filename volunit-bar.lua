@@ -43,13 +43,17 @@ end)
 
 local function perform_dB(op, v, fmt, ao)
 	to_osd:kill()
+	local vol = mp.get_property_number(ao..'volume')
+	if not vol then
+		return
+	end
 	local f, dBmax, pos0
 	if ao == '' then
 		f = 60  ; dBmax = sfmax ; pos0 = sfpos
 	else
 		f = aof ; dBmax = aomax ; pos0 = aopos
 	end
-	local dB = f * math.log(mp.get_property_number(ao..'volume') / 100, 10)
+	local dB = f * math.log(vol / 100, 10)
 	if op == 'add' then
 		dB = math.min(math.max(dBmin, (dB == -math.huge and dBmin or dB) + v), dBmax)
 		mp.commandv('no-osd', 'set', ao..'volume', dB <= dBmin and 0 or 10^(2 + dB / f))
