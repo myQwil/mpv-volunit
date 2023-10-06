@@ -10,7 +10,8 @@ local sfmax = 60 * math.log(mp.get_property_number('volume-max') / 100, 10)
 local aomax = 0
 
 local function perform_dB(op, v, fmt, ao)
-	local vol = mp.get_property_number(ao..'volume')
+	local prop = ao..'volume'
+	local vol = mp.get_property_number(prop)
 	if not vol then
 		return
 	end
@@ -23,10 +24,10 @@ local function perform_dB(op, v, fmt, ao)
 	local dB = f * math.log(vol / 100, 10)
 	if op == 'add' then
 		dB = math.min(math.max(dBmin, (dB == -math.huge and dBmin or dB) + v), dBmax)
-		mp.commandv('osd-bar', 'set', ao..'volume', dB <= dBmin and 0 or 10^(2 + dB / f))
+		mp.commandv('osd-bar', 'set', prop, dB <= dBmin and 0 or 10^(2 + dB / f))
 	elseif op == 'set' then
 		dB = (v == '-inf') and dBmin or tonumber(v)
-		mp.commandv('osd-bar', 'set', ao..'volume', dB <= dBmin and 0 or 10^(2 + dB / f))
+		mp.commandv('osd-bar', 'set', prop, dB <= dBmin and 0 or 10^(2 + dB / f))
 	else
 		fmt = op
 	end
