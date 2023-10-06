@@ -23,9 +23,9 @@ There are no default key-bindings. This is instead left up to the user to assign
 a repeatable script-message-to volunit  dB %+.3f # string format arg works here too
 ```
 
-It also recommended to change the max volume to a decibel value:
+It is also recommended to change the max volume to a decibel value:
 
 `mpv.conf`:
 ```ini
-volume-max=125.892541179416721 # 10^(2 + 6/60) or 100% + 6 dB
+volume-max=125.892541179416721 # 10^(2 + 6/60) or +6 dB
 ```
