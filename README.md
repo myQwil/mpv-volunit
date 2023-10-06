@@ -12,15 +12,15 @@ There are no default key-bindings. This is instead left up to the user to assign
 0 repeatable script-message-to volunit  dB add +2
 
 # AO Volume
-/ repeatable script-message-to volunit  ao-dB add -0.5 %+.1f # optional string format arg
-* repeatable script-message-to volunit  ao-dB add +0.5 %+.1f
+/ repeatable script-message-to volunit  ao-dB add -0.5 .1f # optional string format arg
+* repeatable script-message-to volunit  ao-dB add +0.5 .1f
 
 # Set
 - repeatable script-message-to volunit  dB set -20  # 46.42%
 + repeatable script-message-to volunit  dB set -inf # 0%
 
 # Print 
-a repeatable script-message-to volunit  dB %+.3f # string format arg works here too
+a repeatable script-message-to volunit  dB .3f # string format arg works here too
 ```
 
 It is also recommended to change the max volume to a decibel value:
