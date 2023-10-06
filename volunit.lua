@@ -33,9 +33,8 @@ local function perform_dB(op, v, fmt, ao)
 		fmt = op
 	end
 
-	local svol = dB <= dBmin and '-∞' or string.format(fmt or '%+g',
-		math.floor(dB * 0x1p2 + 0.5) * 0x1p-2)
-	mp.osd_message(string.format(ao:upper()..'Volume: %s dB%s', svol,
+	local s = dB <= dBmin and '-∞' or string.format(fmt or '%+g', dB)
+	mp.osd_message(string.format(ao:upper()..'Volume: %s dB%s', s,
 		mp.get_property_bool(ao..'mute') and ' (Muted)' or ''), o.duration)
 end
 
