@@ -23,8 +23,7 @@ local function perform_dB(op, v, fmt, ao)
 	end
 	local dB = f * math.log(vol / 100, 10)
 	if op == 'add' then
-		v = tonumber(v) or 0
-		dB = math.min(math.max(dBmin, (dB == -math.huge and dBmin or dB) + v), dBmax)
+		dB = math.min((dB == -math.huge and dBmin or dB) + (tonumber(v) or 0), dBmax)
 		mp.commandv('osd-bar', 'set', prop, dB <= dBmin and 0 or 10^(2 + dB / f))
 	elseif op == 'set' then
 		dB = (v == '-inf') and dBmin or tonumber(v) or dB
