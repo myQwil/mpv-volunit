@@ -24,12 +24,12 @@ local function perform_dB(op, v, fmt, ao)
 	if not vol then
 		return
 	end
+
 	local f, dBmax
-	if ao == '' then
-		f = 60  ; dBmax = sfmax
-	else
-		f = aof ; dBmax = aomax
+	if ao == '' then f = 60  ; dBmax = sfmax
+	else             f = aof ; dBmax = aomax
 	end
+
 	local dB = f * math.log(vol / 100, 10)
 	if op == 'add' then
 		dB = math.min((dB == -math.huge and dBmin or dB) + (tonumber(v) or 0), dBmax)
@@ -40,6 +40,7 @@ local function perform_dB(op, v, fmt, ao)
 	else
 		fmt = op
 	end
+
 	msg(ao, (dB <= dBmin and '-∞' or string.format('%+'..(fmt or 'g'), dB))..' dB')
 	return dB, dBmax
 end
@@ -50,6 +51,7 @@ local function perform_cubic(op, v, fmt, ao)
 	if not vol then
 		return
 	end
+
 	local max = (ao == '') and volmax or 100
 	if op == 'add' then
 		vol = math.min(math.max(0, vol + (tonumber(v) or 0)), max)
@@ -60,6 +62,7 @@ local function perform_cubic(op, v, fmt, ao)
 	else
 		fmt = op
 	end
+
 	msg(ao, string.format('%'..(fmt or 'g'), vol)..'%')
 end
 
@@ -69,6 +72,7 @@ local function perform_linear(op, v, fmt, ao)
 	if not vol then
 		return
 	end
+
 	local max = (ao == '') and linmax or 1
 	local rms = (vol / 100) ^ 3
 	if op == 'add' then
@@ -80,6 +84,7 @@ local function perform_linear(op, v, fmt, ao)
 	else
 		fmt = op
 	end
+
 	msg(ao, string.format('%'..(fmt or 'g'), rms))
 end
 
