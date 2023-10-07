@@ -1,8 +1,6 @@
 # mpv-volunit
 mpv scripts for changing volume by decibel amounts.
 
-`volunit-bar.lua` is a slightly altered version of `volunit.lua` that also displays its own custom volume bar to reflect linearly the dB scale.
-
 There are no default key-bindings. This is instead left up to the user to assign keys in their input config file. For example:
 
 `input.conf`:
