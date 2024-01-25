@@ -1,20 +1,20 @@
 local state = nil
 local o = {
 	gap = 20,    -- number of pixels between steps
-	step = 2,    -- step factor
+	step = 1,    -- step factor
 	dBmin = -60, -- silence threshold in decibels
+	fmt = '.3g'  -- number format
 }
 (require 'mp.options').read_options(o)
-local gap   ,step   ,dBmin   ,dBmax
-=     o.gap ,o.step ,o.dBmin ,0
+local dBmin, dBmax = o.dBmin, 0
 local f = mp.get_property('ao') == 'pulse' and 60 or 20
 
 local function drag(_, pos)
-	local dif = math.floor((state.pos.y - pos.y) / gap + 0.5)
+	local dif = math.floor((state.pos.y - pos.y) / o.gap + 0.5)
 	if state.dif ~= dif then
 		state.dif = dif
-		local dB = math.min(state.dB + (dif * step), dBmax)
-		local s = (dB <= dBmin and '-∞' or string.format('%+.0f', dB))..' dB'
+		local dB = math.min(state.dB + (dif * o.step), dBmax)
+		local s = (dB <= dBmin and '-∞' or string.format('%+'..o.fmt, dB))..' dB'
 		mp.commandv('osd-bar', 'set', 'ao-volume', dB <= dBmin and 0 or 10 ^ (2 + dB / f))
 		mp.osd_message(string.format('AO-Volume: %s%s', s,
 			mp.get_property_bool('ao-mute') and ' (Muted)' or ''), 1)
