@@ -39,6 +39,8 @@ local function perform_dB(op, v, fmt, ao)
 		mp.commandv(osd, 'set', prop, dB <= dBmin and 0 or 10 ^ (2 + dB / f))
 	else
 		fmt = op
+		msg(ao, (vol == 0 and '-∞' or string.format('%+'..(fmt or 'g'), dB))..' dB')
+		return dB, dBmax
 	end
 
 	msg(ao, (dB <= dBmin and '-∞' or string.format('%+'..(fmt or 'g'), dB))..' dB')
