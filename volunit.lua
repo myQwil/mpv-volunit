@@ -92,9 +92,8 @@ local function perform_linear(op, v, fmt, ao)
 end
 
 
-local b
 if o.custom_bar then
-	b = {
+	local b = {
 		assdraw = require('mp.assdraw'),
 		osd = mp.create_osd_overlay('ass-events'),
 		color = {
