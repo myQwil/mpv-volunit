@@ -38,17 +38,24 @@ local function perform_dB(op, v, fmt, ao)
 
 	if op == 'add' then
 		dB = math.min(math.max(dBmin, dB) + (tonumber(v) or 0), dBmax)
-		mp.commandv(osd, 'set', prop, dB <= dBmin and 0 or math.exp(k * dB + ln_ten))
 	elseif op == 'set' then
 		dB = (v == '-inf') and dBmin or tonumber(v) or dB
-		mp.commandv(osd, 'set', prop, dB <= dBmin and 0 or math.exp(k * dB + ln_ten))
 	else
-		fmt = op
-		msg(ao, (vol == 0 and '-∞' or string.format('%+'..(fmt or 'g'), dB))..' dB')
+		msg(ao, (vol == 0 and '-∞' or string.format('%+'..(op or 'g'), dB))..' dB')
 		return dB, dBmax
 	end
 
-	msg(ao, (dB <= dBmin and '-∞' or string.format('%+'..(fmt or 'g'), dB))..' dB')
+	if not fmt then
+		fmt = v
+	end
+	local prec = math.abs(tonumber(fmt) or 1)
+	dB = math.floor(dB / prec + 0.5) * prec
+
+	local i = fmt:find('%.')
+	fmt = '.'..(i and fmt:sub(i + 1):len() or 0)..'f'
+
+	mp.commandv(osd, 'set', prop, dB <= dBmin and 0 or math.exp(k * dB + ln_ten))
+	msg(ao, (dB <= dBmin and '-∞' or string.format('%+'..fmt, dB))..' dB')
 	return dB, dBmax
 end
 
