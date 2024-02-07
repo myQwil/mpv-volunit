@@ -22,6 +22,15 @@ local function msg(ao, s)
 		mp.get_property_bool(ao..'mute') and ' (Muted)' or ''), o.duration)
 end
 
+local function set_precision(x, fmt)
+	local prec = math.abs(tonumber(fmt) or 1)
+	x = math.floor(x / prec + 0.5) * prec
+
+	local i = fmt:find('%.')
+	fmt = '.'..(i and fmt:sub(i + 1):len() or 0)..'f'
+	return x, fmt
+end
+
 local function perform_dB(op, v, fmt, ao)
 	local prop = ao..'volume'
 	local vol = mp.get_property_number(prop)
@@ -39,21 +48,13 @@ local function perform_dB(op, v, fmt, ao)
 	if op == 'add' then
 		dB = math.min(math.max(dBmin, dB) + (tonumber(v) or 0), dBmax)
 	elseif op == 'set' then
-		dB = (v == '-inf') and dBmin or tonumber(v) or dB
+		dB = (v == '-inf') and dBmin or math.min(tonumber(v) or dB, dBmax)
 	else
 		msg(ao, (vol == 0 and '-∞' or string.format('%+'..(op or 'g'), dB))..' dB')
 		return dB, dBmax
 	end
 
-	if not fmt then
-		fmt = v
-	end
-	local prec = math.abs(tonumber(fmt) or 1)
-	dB = math.floor(dB / prec + 0.5) * prec
-
-	local i = fmt:find('%.')
-	fmt = '.'..(i and fmt:sub(i + 1):len() or 0)..'f'
-
+	dB, fmt = set_precision(dB, fmt or v)
 	mp.commandv(osd, 'set', prop, dB <= dBmin and 0 or math.exp(k * dB + ln_ten))
 	msg(ao, (dB <= dBmin and '-∞' or string.format('%+'..fmt, dB))..' dB')
 	return dB, dBmax
@@ -69,15 +70,15 @@ local function perform_cubic(op, v, fmt, ao)
 	local max = (ao == '') and volmax or 100
 	if op == 'add' then
 		vol = math.min(math.max(0, vol + (tonumber(v) or 0)), max)
-		mp.commandv('osd-bar', 'set', prop, vol)
 	elseif op == 'set' then
 		vol = math.min(math.max(0, tonumber(v) or vol), max)
-		mp.commandv('osd-bar', 'set', prop, vol)
 	else
-		fmt = op
+		return msg(ao, string.format('%'..(op or 'g'), vol)..'%')
 	end
 
-	msg(ao, string.format('%'..(fmt or 'g'), vol)..'%')
+	vol, fmt = set_precision(vol, fmt or v)
+	mp.commandv('osd-bar', 'set', prop, vol)
+	msg(ao, string.format('%'..fmt, vol)..'%')
 end
 
 local function perform_linear(op, v, fmt, ao)
@@ -91,15 +92,15 @@ local function perform_linear(op, v, fmt, ao)
 	local rms = (vol / 100) ^ 3
 	if op == 'add' then
 		rms = math.min(math.max(0, rms + (tonumber(v) or 0)), max)
-		mp.commandv('osd-bar', 'set', prop, rms ^ (1 / 3) * 100)
 	elseif op == 'set' then
 		rms = math.min(math.max(0, tonumber(v) or rms), max)
-		mp.commandv('osd-bar', 'set', prop, rms ^ (1 / 3) * 100)
 	else
-		fmt = op
+		return msg(ao, string.format('%'..(op or 'g'), rms))
 	end
 
-	msg(ao, string.format('%'..(fmt or 'g'), rms))
+	rms, fmt = set_precision(rms, fmt or v)
+	mp.commandv('osd-bar', 'set', prop, rms ^ (1 / 3) * 100)
+	msg(ao, string.format('%'..fmt, rms))
 end
 
 
