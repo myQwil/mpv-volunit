@@ -1,13 +1,23 @@
 local state = nil
 local o = {
 	gap = 20,    -- number of pixels between steps
-	step = 1,    -- step factor
+	step = 1,    -- step factor and precision level
 	dBmin = -60, -- silence threshold in decibels
-	fmt = '.3g'  -- number format
+	fmt = ''     -- print format
 }
 (require 'mp.options').read_options(o)
 local dBmin, dBmax = o.dBmin, 0
-local f = mp.get_property('ao') == 'pulse' and 60 or 20
+local prec = math.abs(o.step)
+
+if o.fmt == '' then
+	o.fmt = tostring(o.step)
+	local i = o.fmt:find('%.')
+	o.fmt = '.'..(i and o.fmt:sub(i + 1):len() or 0)..'f'
+end
+
+local ln_ten = math.log(10)
+local k = ln_ten / (mp.get_property('ao') == 'pulse' and 60 or 20)
+ln_ten = ln_ten * 2
 
 local function drag(_, pos)
 	local dif = math.floor((state.pos.y - pos.y) / o.gap + 0.5)
@@ -15,7 +25,8 @@ local function drag(_, pos)
 		state.dif = dif
 		local dB = math.min(state.dB + (dif * o.step), dBmax)
 		local s = (dB <= dBmin and '-∞' or string.format('%+'..o.fmt, dB))..' dB'
-		mp.commandv('osd-bar', 'set', 'ao-volume', dB <= dBmin and 0 or 10 ^ (2 + dB / f))
+		mp.commandv('osd-bar', 'set', 'ao-volume',
+			dB <= dBmin and 0 or math.exp(k * dB + ln_ten))
 		mp.osd_message(string.format('AO-Volume: %s%s', s,
 			mp.get_property_bool('ao-mute') and ' (Muted)' or ''), 1)
 	end
@@ -28,7 +39,9 @@ local function click(t)
 		if not (pos and vol) then
 			return
 		end
-		state = { pos=pos, dif=0, dB=math.max(dBmin, f * math.log(vol / 100, 10)) }
+		local dB = math.max(dBmin, (math.log(vol) - ln_ten) / k)
+		dB = math.floor(dB / prec + 0.5) * prec
+		state = { pos=pos, dif=0, dB=dB }
 		mp.observe_property('mouse-pos', 'native', drag)
 	elseif t.event == 'up' then
 		mp.unobserve_property(drag)
