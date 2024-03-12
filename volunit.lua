@@ -23,7 +23,8 @@ local function msg(ao, s)
 end
 
 local function set_precision(x, fmt)
-	local prec = math.abs(tonumber(fmt) or 1)
+	local prec = tonumber(fmt)
+	prec = (prec and prec ~= 0) and math.abs(prec) or 1
 	x = math.floor(x / prec + 0.5) * prec
 
 	local i = fmt:find('%.')
