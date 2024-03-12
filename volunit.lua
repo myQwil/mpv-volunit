@@ -7,14 +7,14 @@ local o = {
 local dBmin = o.dBmin
 local osd = o.custom_bar and 'no-osd' or 'osd-bar'
 
-local ln_ten = math.log(10)
-local ln_ao = ln_ten / (mp.get_property('ao') == 'pulse' and 60 or 20)
-local ln_sf = ln_ten / 60
-ln_ten = ln_ten * 2
+local ln10 = math.log(10)
+local ln_ao = ln10 / (mp.get_property('ao') == 'pulse' and 60 or 20)
+local ln_sf = ln10 / 60
+local ln100 = ln10 * 2
 
 local volmax = mp.get_property_number('volume-max', 100)
 local linmax = (volmax / 100) ^ 3
-local sfmax = (math.log(volmax) - ln_ten) / ln_sf
+local sfmax = (math.log(volmax) - ln100) / ln_sf
 local aomax = 0
 
 local function msg(ao, s)
@@ -44,7 +44,7 @@ local function perform_dB(op, v, fmt, ao)
 	else             k = ln_ao ; dBmax = aomax
 	end
 
-	local dB = (math.log(vol) - ln_ten) / k
+	local dB = (math.log(vol) - ln100) / k
 
 	if op == 'add' then
 		dB = math.min(math.max(dBmin, dB) + (tonumber(v) or 0), dBmax)
@@ -56,7 +56,7 @@ local function perform_dB(op, v, fmt, ao)
 	end
 
 	dB, fmt = set_precision(dB, fmt or v)
-	mp.commandv(osd, 'set', prop, dB <= dBmin and 0 or math.exp(k * dB + ln_ten))
+	mp.commandv(osd, 'set', prop, dB <= dBmin and 0 or math.exp(k * dB + ln100))
 	msg(ao, (dB <= dBmin and '-∞' or string.format('%+'..fmt, dB))..' dB')
 	return dB, dBmax
 end
