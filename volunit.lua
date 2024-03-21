@@ -191,7 +191,9 @@ if o.custom_bar then
 	function b:perform(op, v, fmt, ao)
 		self.to_osd:kill()
 		local dB, dBmax = perform_dB(op, v, fmt, ao)
-		self:draw_bar(dB, dBmax, ao)
+		if dB then
+			self:draw_bar(dB, dBmax, ao)
+		end
 		self.to_osd:resume()
 	end
 
