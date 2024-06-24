@@ -22,17 +22,18 @@ local function msg(ao, s)
 		mp.get_property_bool(ao..'mute') and ' (Muted)' or ''), o.duration)
 end
 
-local function set_precision(x, fmt)
-	local prec = tonumber(fmt)
+local function set_precision(x, prec)
+	local prec = tonumber(prec)
 	prec = (prec and prec ~= 0) and math.abs(prec) or 1
-	x = math.floor(x / prec + 0.5) * prec
-
-	local i = fmt:find('%.')
-	fmt = '.'..(i and fmt:sub(i + 1):len() or 0)..'f'
-	return x, fmt
+	return math.floor(x / prec + 0.5) * prec
 end
 
-local function perform_dB(op, v, fmt, ao)
+local function set_format(prec)
+	local i = prec:find('%.')
+	return i and ('.'..prec:sub(i + 1):len()..'f') or 'g'
+end
+
+local function perform_dB(op, v, prec, fmt, ao)
 	local prop = ao..'volume'
 	local vol = mp.get_property_number(prop)
 	if not vol then
@@ -55,13 +56,15 @@ local function perform_dB(op, v, fmt, ao)
 		return dB, dBmax
 	end
 
-	dB, fmt = set_precision(dB, fmt or v)
+	prec = prec or v
+	fmt = fmt or set_format(prec)
+	dB = set_precision(dB, prec)
 	mp.commandv(osd, 'set', prop, dB <= dBmin and 0 or math.exp(k * dB + ln100))
 	msg(ao, (dB <= dBmin and '-∞' or string.format('%+'..fmt, dB))..' dB')
 	return dB, dBmax
 end
 
-local function perform_cubic(op, v, fmt, ao)
+local function perform_cubic(op, v, prec, fmt, ao)
 	local prop = ao..'volume'
 	local vol = mp.get_property_number(prop)
 	if not vol then
@@ -82,7 +85,7 @@ local function perform_cubic(op, v, fmt, ao)
 	msg(ao, string.format('%'..fmt, vol)..'%')
 end
 
-local function perform_linear(op, v, fmt, ao)
+local function perform_linear(op, v, prec, fmt, ao)
 	local prop = ao..'volume'
 	local vol = mp.get_property_number(prop)
 	if not vol then
@@ -188,9 +191,9 @@ if o.custom_bar then
 
 	b.to_osd = mp.add_timeout(o.duration, function() b.osd:remove() end, true)
 
-	function b:perform(op, v, fmt, ao)
+	function b:perform(op, v, fmt, prec, ao)
 		self.to_osd:kill()
-		local dB, dBmax = perform_dB(op, v, fmt, ao)
+		local dB, dBmax = perform_dB(op, v, fmt, prec, ao)
 		if dB then
 			self:draw_bar(dB, dBmax, ao)
 		end
@@ -198,22 +201,22 @@ if o.custom_bar then
 	end
 
 	mp.register_script_message('dB',
-		function(op, v, fmt) b:perform(op, v, fmt, '') end)
+		function(op, v, prec, fmt) b:perform(op, v, prec, fmt, '') end)
 	mp.register_script_message('ao-dB',
-		function(op, v, fmt) b:perform(op, v, fmt, 'ao-') end)
+		function(op, v, prec, fmt) b:perform(op, v, prec, fmt, 'ao-') end)
 else
 	mp.register_script_message('dB',
-		function(op, v, fmt) perform_dB(op, v, fmt, '') end)
+		function(op, v, prec, fmt) perform_dB(op, v, prec, fmt, '') end)
 	mp.register_script_message('ao-dB',
-		function(op, v, fmt) perform_dB(op, v, fmt, 'ao-') end)
+		function(op, v, prec, fmt) perform_dB(op, v, prec, fmt, 'ao-') end)
 end
 
 mp.register_script_message('cubic',
-	function(op, v, fmt) perform_cubic(op, v, fmt, '') end)
+	function(op, v, prec, fmt) perform_cubic(op, v, prec, fmt, '') end)
 mp.register_script_message('ao-cubic',
-	function(op, v, fmt) perform_cubic(op, v, fmt, 'ao-') end)
+	function(op, v, prec, fmt) perform_cubic(op, v, prec, fmt, 'ao-') end)
 
 mp.register_script_message('linear',
-	function(op, v, fmt) perform_linear(op, v, fmt, '') end)
+	function(op, v, prec, fmt) perform_linear(op, v, prec, fmt, '') end)
 mp.register_script_message('ao-linear',
-	function(op, v, fmt) perform_linear(op, v, fmt, 'ao-') end)
+	function(op, v, prec, fmt) perform_linear(op, v, prec, fmt, 'ao-') end)
