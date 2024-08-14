@@ -52,11 +52,12 @@ local function perform_dB(op, v, prec, fmt, ao)
 	elseif op == 'set' then
 		dB = (v == '-inf') and dBmin or math.min(tonumber(v) or dB, dBmax)
 	else
+		mp.commandv(osd, 'add', prop, 0)
 		msg(ao, (vol == 0 and '-∞' or string.format('%+'..(op or 'g'), dB))..' dB')
 		return dB, dBmax
 	end
 
-	prec = prec or v
+	prec = prec or v or ''
 	fmt = fmt or set_format(prec)
 	dB = set_precision(dB, prec)
 	mp.commandv(osd, 'set', prop, dB <= dBmin and 0 or math.exp(k * dB + ln100))
@@ -77,6 +78,7 @@ local function perform_cubic(op, v, prec, fmt, ao)
 	elseif op == 'set' then
 		vol = math.min(math.max(0, tonumber(v) or vol), max)
 	else
+		mp.commandv('osd-bar', 'add', prop, 0)
 		return msg(ao, string.format('%'..(op or 'g'), vol)..'%')
 	end
 
@@ -99,6 +101,7 @@ local function perform_linear(op, v, prec, fmt, ao)
 	elseif op == 'set' then
 		rms = math.min(math.max(0, tonumber(v) or rms), max)
 	else
+		mp.commandv('osd-bar', 'add', prop, 0)
 		return msg(ao, string.format('%'..(op or 'g'), rms))
 	end
 
