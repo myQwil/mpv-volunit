@@ -3,7 +3,8 @@ local o = {
 	gap = 20,    -- number of pixels between steps
 	step = 1,    -- step factor and precision level
 	dBmin = -60, -- silence threshold in decibels
-	fmt = ''     -- print format
+	fmt = '',    -- print format
+	x = true,    -- whether to use the x or y axis
 }
 (require 'mp.options').read_options(o)
 local dBmin, dBmax = o.dBmin, 0
@@ -15,18 +16,17 @@ if o.fmt == '' then
 	o.fmt = '.'..(i and o.fmt:sub(i + 1):len() or 0)..'f'
 end
 
-local ln_100 = math.log(10)
-local k = ln_100 / (mp.get_property('ao') == 'pulse' and 60 or 20)
-ln_100 = ln_100 * 2
+local k = (mp.get_property('ao') == 'pulse') and 60 or 20
 
 local function drag(_, pos)
-	local dif = math.floor((state.pos.y - pos.y) / o.gap + 0.5)
+	local dif = o.x and (pos.x - state.pos.x) or (state.pos.y - pos.y)
+	dif = math.floor(dif / o.gap + 0.5)
 	if state.dif ~= dif then
 		state.dif = dif
 		local dB = math.min(state.dB + (dif * o.step), dBmax)
 		local s = (dB <= dBmin and '-∞' or string.format('%+'..o.fmt, dB))..' dB'
 		mp.commandv('osd-bar', 'set', 'ao-volume',
-			dB <= dBmin and 0 or math.exp(k * dB + ln_100))
+			dB <= dBmin and 0 or 10 ^ (2 + dB / k))
 		mp.osd_message(string.format('AO-Volume: %s%s', s,
 			mp.get_property_bool('ao-mute') and ' (Muted)' or ''), 1)
 	end
@@ -39,7 +39,7 @@ local function click(t)
 		if not (pos and vol) then
 			return
 		end
-		local dB = math.max(dBmin, (math.log(vol) - ln_100) / k)
+		local dB = math.max(dBmin, k * math.log(vol / 100, 10))
 		dB = math.floor(dB / prec + 0.5) * prec
 		state = { pos=pos, dif=0, dB=dB }
 		mp.observe_property('mouse-pos', 'native', drag)
@@ -48,4 +48,5 @@ local function click(t)
 	end
 end
 
-mp.add_key_binding('mbtn_mid', click, {complex=true})
+mp.add_key_binding('MBTN_MID', click, {complex=true})
+-- mp.add_key_binding('Ctrl+MBTN_LEFT', click, {complex=true})

@@ -14,13 +14,17 @@ local function print_dB(ao, dB, fmt)
 end
 
 local function perform_dB(op, v, ao)
-	local f, dBmax
-	if ao == '' then f = 60  ; dBmax = sfmax
-	else             f = aof ; dBmax = 0
+	local prop = ao..'volume'
+	local vol = mp.get_property_number(prop)
+	if not vol then
+		return
 	end
 
-	local prop = ao..'volume'
-	local dB = f * math.log(mp.get_property_number(prop) / 100, 10)
+	local k, dBmax
+	if ao == '' then k = 60  ; dBmax = sfmax
+	else             k = aof ; dBmax = 0
+	end
+	local dB = k * math.log(vol / 100, 10)
 
 	if op == 'add' then
 		local inc = tonumber(v) or 0
@@ -31,9 +35,9 @@ local function perform_dB(op, v, ao)
 		dB = (v == '-inf') and dBmin or math.min(tonumber(v) or dB, dBmax)
 	else
 		mp.commandv('osd-bar', 'add', prop, 0)
-		return print_dB(ao, dB, 'g')
+		return print_dB(ao, dB, op or 'g')
 	end
-	mp.commandv('osd-bar', 'set', prop, (dB <= dBmin) and 0 or 10 ^ (2 + dB / f))
+	mp.commandv('osd-bar', 'set', prop, (dB <= dBmin) and 0 or 10 ^ (2 + dB / k))
 
 	local i = v and v:find('%.')
 	print_dB(ao, dB, i and ('.'..v:sub(i + 1):len()..'f') or 'g')

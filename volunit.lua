@@ -6,31 +6,25 @@ local o = {
 (require 'mp.options').read_options(o)
 local dBmin = o.dBmin
 local osd = o.custom_bar and 'no-osd' or 'osd-bar'
-
-local ln10 = math.log(10)
-local ln_ao = ln10 / (mp.get_property('ao') == 'pulse' and 60 or 20)
-local ln_sf = ln10 / 60
-local ln100 = ln10 * 2
-
+local aof = (mp.get_property('ao') == 'pulse') and 60 or 20
 local volmax = mp.get_property_number('volume-max', 100)
+local sfmax = 60 * math.log(volmax / 100, 10)
 local linmax = (volmax / 100) ^ 3
-local sfmax = (math.log(volmax) - ln100) / ln_sf
-local aomax = 0
 
 local function msg(ao, s)
 	mp.osd_message(string.format(ao:upper()..'Volume: %s%s', s,
 		mp.get_property_bool(ao..'mute') and ' (Muted)' or ''), o.duration)
 end
 
-local function set_precision(x, prec)
-	local prec = tonumber(prec)
+local function set_fmt_vol(prec, fmt, vol)
+	if not fmt then
+		local i = prec:find('%.')
+		fmt = i and ('.'..prec:sub(i + 1):len()..'f') or 'g'
+	end
+	prec = tonumber(prec)
 	prec = (prec and prec ~= 0) and math.abs(prec) or 1
-	return math.floor(x / prec + 0.5) * prec
-end
-
-local function set_format(prec)
-	local i = prec:find('%.')
-	return i and ('.'..prec:sub(i + 1):len()..'f') or 'g'
+	vol = math.floor(vol / prec + 0.5) * prec
+	return fmt, vol
 end
 
 local function perform_dB(op, v, prec, fmt, ao)
@@ -41,11 +35,10 @@ local function perform_dB(op, v, prec, fmt, ao)
 	end
 
 	local k, dBmax
-	if ao == '' then k = ln_sf ; dBmax = sfmax
-	else             k = ln_ao ; dBmax = aomax
+	if ao == '' then k = 60  ; dBmax = sfmax
+	else             k = aof ; dBmax = 0
 	end
-
-	local dB = (math.log(vol) - ln100) / k
+	local dB = k * math.log(vol / 100, 10)
 
 	if op == 'add' then
 		dB = math.min(math.max(dBmin, dB) + (tonumber(v) or 0), dBmax)
@@ -53,15 +46,13 @@ local function perform_dB(op, v, prec, fmt, ao)
 		dB = (v == '-inf') and dBmin or math.min(tonumber(v) or dB, dBmax)
 	else
 		mp.commandv(osd, 'add', prop, 0)
-		msg(ao, (vol == 0 and '-∞' or string.format('%+'..(op or 'g'), dB))..' dB')
+		msg(ao, ((vol == 0) and '-∞' or string.format('%+'..(op or 'g'), dB))..' dB')
 		return dB, dBmax
 	end
 
-	prec = prec or v or ''
-	fmt = fmt or set_format(prec)
-	dB = set_precision(dB, prec)
-	mp.commandv(osd, 'set', prop, dB <= dBmin and 0 or math.exp(k * dB + ln100))
-	msg(ao, (dB <= dBmin and '-∞' or string.format('%+'..fmt, dB))..' dB')
+	fmt, dB = set_fmt_vol(prec or v or '', fmt, dB)
+	mp.commandv(osd, 'set', prop, (dB <= dBmin) and 0 or 10 ^ (2 + dB / k))
+	msg(ao, ((dB <= dBmin) and '-∞' or string.format('%+'..fmt, dB))..' dB')
 	return dB, dBmax
 end
 
@@ -82,7 +73,7 @@ local function perform_cubic(op, v, prec, fmt, ao)
 		return msg(ao, string.format('%'..(op or 'g'), vol)..'%')
 	end
 
-	vol, fmt = set_precision(vol, fmt or v)
+	fmt, vol = set_fmt_vol(prec or v or '', fmt, vol)
 	mp.commandv('osd-bar', 'set', prop, vol)
 	msg(ao, string.format('%'..fmt, vol)..'%')
 end
@@ -105,15 +96,15 @@ local function perform_linear(op, v, prec, fmt, ao)
 		return msg(ao, string.format('%'..(op or 'g'), rms))
 	end
 
-	rms, fmt = set_precision(rms, fmt or v)
+	fmt, rms = set_fmt_vol(prec or v or '', fmt, rms)
 	mp.commandv('osd-bar', 'set', prop, rms ^ (1 / 3) * 100)
 	msg(ao, string.format('%'..fmt, rms))
 end
 
 
 if o.custom_bar then
+	local assdraw = require('mp.assdraw')
 	local b = {
-		assdraw = require('mp.assdraw'),
 		osd = mp.create_osd_overlay('ass-events'),
 		color = {
 			font = '1cH000000\\3cH808080',
@@ -124,9 +115,10 @@ if o.custom_bar then
 			line = '1aHFF\\3cH808080',
 		},
 		bord = 4,
-		win_w=0, win_h=0, w=0, h=0,
-		x=0, y=0, sx=0, sy=0,
-		sfpos=0, aopos=0,
+		w=0, h=0, x=0, y=0,
+		win_w=0, win_h=0,
+		sf=0, ao=0, -- 100% volume markers
+		sx=0, sy=0, -- speaker symbol position
 	}
 	b.half = b.bord * 0.5
 
@@ -137,15 +129,10 @@ if o.custom_bar then
 		b.h = b.win_h * 0.03125
 		b.x = (b.win_w - b.w) * 0.5
 		b.y = (b.win_h - b.h) * 0.75
-
-		-- dent the bar at the 100% volume position
-		b.dent = b.h * 0.25
-		b.sfpos = (b.w - b.bord) * (0 - dBmin) / (sfmax - dBmin) + b.half
-		b.aopos = b.w - b.half
-
-		-- speaker symbol is anchored to this position
 		b.sx = b.x - b.h * 0.25
 		b.sy = b.y + b.h * 0.5
+		b.sf = (b.w - b.bord) * (0 - dBmin) / (sfmax - dBmin) + b.half
+		b.ao = b.w - b.half
 	end, true)
 
 	mp.observe_property('osd-dimensions', 'native', function(_, win)
@@ -177,8 +164,8 @@ if o.custom_bar then
 		local bord, half = self.bord, self.half
 		local x, y, w, h = self.x, self.y, self.w, self.h
 		local pos = (w - bord) * ((math.max(dBmin, dB) - dBmin) / (dBmax - dBmin)) + half
-		local pos0 = (ao == '') and self.sfpos or self.aopos
-		local draw = self.assdraw.ass_new()
+		local pos0 = (ao == '') and self.sf or self.ao
+		local draw = assdraw.ass_new()
 		draw:append(string.format('{\\an6\\bord%g\\%s\\pos(%g,%g)'
 			..'\\fnmpv-osd-symbols}', bord, color.font, self.sx, self.sy))
 
