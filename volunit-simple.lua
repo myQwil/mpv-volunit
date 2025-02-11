@@ -13,6 +13,10 @@ local function print_dB(ao, dB, fmt)
 		mp.get_property_bool(ao..'mute') and ' (Muted)' or ''), o.duration)
 end
 
+local function round(x)
+	return x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)
+end
+
 local function perform_dB(op, v, ao)
 	local prop = ao..'volume'
 	local vol = mp.get_property_number(prop)
@@ -30,7 +34,7 @@ local function perform_dB(op, v, ao)
 		local inc = tonumber(v) or 0
 		local prec = (inc ~= 0) and math.abs(inc) or 1
 		dB = math.min(math.max(dBmin, dB) + inc, dBmax)
-		dB = math.floor(dB / prec + 0.5) * prec
+		dB = round(dB / prec) * prec
 	elseif op == 'set' then
 		dB = (v == '-inf') and dBmin or math.min(tonumber(v) or dB, dBmax)
 	else

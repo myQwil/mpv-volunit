@@ -18,9 +18,13 @@ end
 
 local k = (mp.get_property('ao') == 'pulse') and 60 or 20
 
+local function round(x)
+	return x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)
+end
+
 local function drag(_, pos)
 	local dif = o.x and (pos.x - state.pos.x) or (state.pos.y - pos.y)
-	dif = math.floor(dif / o.gap + 0.5)
+	dif = round(dif / o.gap)
 	if state.dif ~= dif then
 		state.dif = dif
 		local dB = math.min(state.dB + (dif * o.step), dBmax)
@@ -40,7 +44,7 @@ local function click(t)
 			return
 		end
 		local dB = math.max(dBmin, k * math.log(vol / 100, 10))
-		dB = math.floor(dB / prec + 0.5) * prec
+		dB = round(dB / prec) * prec
 		state = { pos=pos, dif=0, dB=dB }
 		mp.observe_property('mouse-pos', 'native', drag)
 	elseif t.event == 'up' then

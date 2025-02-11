@@ -16,6 +16,10 @@ local function msg(ao, s)
 		mp.get_property_bool(ao..'mute') and ' (Muted)' or ''), o.duration)
 end
 
+local function round(x)
+	return x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)
+end
+
 local function set_fmt_vol(prec, fmt, vol)
 	if not fmt then
 		local i = prec:find('%.')
@@ -23,7 +27,7 @@ local function set_fmt_vol(prec, fmt, vol)
 	end
 	prec = tonumber(prec)
 	prec = (prec and prec ~= 0) and math.abs(prec) or 1
-	vol = math.floor(vol / prec + 0.5) * prec
+	vol = round(vol / prec) * prec
 	return fmt, vol
 end
 
