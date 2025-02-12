@@ -19,7 +19,8 @@ end
 local k = (mp.get_property('ao') == 'pulse') and 60 or 20
 
 local function round(x)
-	return x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)
+	x = x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)
+	return x == -0 and 0 or x
 end
 
 local function drag(_, pos)

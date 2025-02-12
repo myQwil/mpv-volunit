@@ -17,7 +17,8 @@ local function msg(ao, s)
 end
 
 local function round(x)
-	return x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)
+	x = x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)
+	return x == -0 and 0 or x
 end
 
 local function set_fmt_vol(prec, fmt, vol)
