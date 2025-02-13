@@ -26,10 +26,18 @@ local function translate(scale, op, v, prec)
 		return
 	end
 
-	local value
+	local value, fmt
 	if op == 'add' then
+		prec = prec or v or ''
+		local i = prec:find('%.')
+		fmt = i and ('.'..prec:sub(i + 1):len()..'f') or 'g'
+		prec = tonumber(prec)
+		prec = (prec and prec ~= 0) and math.abs(prec) or 1
+
 		value = math.max(scale.min, scale:from_volume(vol / 100)) + (tonumber(v) or 0)
+		value = math.min(math.max(scale.min, round(value / prec) * prec), scale.max)
 	elseif op == 'set' then
+		fmt = prec or 'g'
 		value = v == '-inf' and -math.huge or tonumber(v) or 0
 	else
 		mp.commandv(osd, 'add', prop, 0)
@@ -37,14 +45,6 @@ local function translate(scale, op, v, prec)
 		msg(ao, scale:to_string_any(value, op or 'g'))
 		return math.min(math.max(scale.min, value), scale.max)
 	end
-
-	prec = prec or v or ''
-	local i = prec:find('%.')
-	local fmt = i and ('.'..prec:sub(i + 1):len()..'f') or 'g'
-
-	prec = tonumber(prec)
-	prec = (prec and prec ~= 0) and math.abs(prec) or 1
-	value = math.min(math.max(scale.min, round(value / prec) * prec), scale.max)
 
 	mp.commandv(osd, 'set', prop, scale:to_volume(value) * 100)
 	msg(ao, scale:to_string(value, fmt))
