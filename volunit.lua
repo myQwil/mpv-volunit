@@ -57,7 +57,7 @@ end
 local perform
 if o.custom_bar then
 	local assdraw = require('mp.assdraw')
-	local b = {
+	local bar = {
 		osd = mp.create_osd_overlay('ass-events'),
 		color = {
 			font = '1cH000000\\3cH808080',
@@ -71,27 +71,27 @@ if o.custom_bar then
 		win_w=0, win_h=0,
 		sx=0, sy=0, -- speaker symbol position
 	}
-	b.half = b.bord * 0.5
+	bar.half = bar.bord * 0.5
 
-	b.to_dimen = mp.add_timeout(0.15, function()
-		b.win_w = b.win_w * (b.osd.res_y / b.win_h)
-		b.win_h = b.osd.res_y
+	bar.to_dimen = mp.add_timeout(0.15, function()
+		bar.win_w = bar.win_w * (bar.osd.res_y / bar.win_h)
+		bar.win_h = bar.osd.res_y
 
-		b.w = b.win_w * 0.75
-		b.h = b.win_h * 0.03125
+		bar.w = bar.win_w * 0.75
+		bar.h = bar.win_h * 0.03125
 
-		b.x = (b.win_w - b.w) * 0.5  -- horizontally centered
-		b.y = (b.win_h - b.h) * 0.75 -- below vertical center
+		bar.x = (bar.win_w - bar.w) * 0.5  -- horizontally centered
+		bar.y = (bar.win_h - bar.h) * 0.75 -- below vertical center
 
-		b.sx = b.x - b.h * 0.25 -- left of bar, with 1/4 bar height margin
-		b.sy = b.y + b.h * 0.5  -- vertically centered with bar
+		bar.sx = bar.x - bar.h * 0.25 -- left of bar, with 1/4 bar height margin
+		bar.sy = bar.y + bar.h * 0.5  -- vertically centered with bar
 	end, true)
 
 	mp.observe_property('osd-dimensions', 'native', function(_, win)
-		b.to_dimen:kill()
-		b.win_w, b.win_h = win.w, win.h
-		if b.win_h ~= 0 then
-			b.to_dimen:resume()
+		bar.to_dimen:kill()
+		bar.win_w, bar.win_h = win.w, win.h
+		if bar.win_h ~= 0 then
+			bar.to_dimen:resume()
 		end
 	end)
 
@@ -115,7 +115,7 @@ if o.custom_bar then
 		return (pos - scale.min) / (scale.max - scale.min)
 	end
 
-	function b:draw_bar(scale, value)
+	function bar:draw(scale, value)
 		local color = self.color
 		local bord, half = self.bord, self.half
 		local x, y, w, h = self.x, self.y, self.w, self.h
@@ -136,19 +136,21 @@ if o.custom_bar then
 		self.osd:update()
 	end
 
-	b.to_osd = mp.add_timeout(o.duration, function() b.osd:remove() end, true)
+	bar.to_osd = mp.add_timeout(o.duration, function()
+		bar.osd:remove()
+	end, true)
 
-	function b:translate(scale, op, v, prec)
+	function bar:translate(scale, op, v, prec)
 		self.to_osd:kill()
 		local value = translate(scale, op, v, prec)
 		if value then
-			self:draw_bar(scale, value)
+			self:draw(scale, value)
 		end
 		self.to_osd:resume()
 	end
 
 	perform = function(scale, op, v, prec)
-		b:translate(scale, op, v, prec)
+		bar:translate(scale, op, v, prec)
 	end
 else
 	perform = function(scale, op, v, prec)
