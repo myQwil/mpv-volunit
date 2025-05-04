@@ -14,8 +14,9 @@ local function round(x)
 end
 
 local function msg(ao, s)
-	mp.osd_message(string.format(ao:upper().."Volume: %s%s", s,
-		mp.get_property_bool(ao.."mute") and " (Muted)" or ""), o.duration)
+	mp.osd_message((ao:upper().."Volume: %s%s"):format(
+		s, mp.get_property_bool(ao.."mute") and " (Muted)" or ""
+	), o.duration)
 end
 
 local function translate(scale, op, v, prec)
@@ -105,7 +106,7 @@ if o.custom_bar then
 	end
 
 	local function ass_draw(ass, fn, bord, color, x, y, w, h)
-		ass:append(string.format("\n{\\bord%g\\%s\\pos(%g,%g)}", bord, color, x, y))
+		ass:append(("\n{\\bord%g\\%s\\pos(%g,%g)}"):format(bord, color, x, y))
 		ass:draw_start()
 		fn(ass, w, h)
 		ass:draw_stop()
@@ -123,8 +124,9 @@ if o.custom_bar then
 		local pos0 = (w - bord) * normalized(scale, scale.full) + half
 
 		local draw = assdraw.ass_new()
-		draw:append(string.format("{\\an6\\bord%g\\%s\\pos(%g,%g)"
-			.."\\fnmpv-osd-symbols}", bord, color.font, self.sx, self.sy))
+		draw:append(("{\\an6\\bord%g\\%s\\pos(%g,%g)".."\\fnmpv-osd-symbols}"):format(
+			bord, color.font, self.sx, self.sy
+		))
 
 		ass_draw(draw, rect, 0, color.back, x, y, w, h)        -- back area
 		ass_draw(draw, rect, 0, scale.color, x, y, pos, h)     -- filled area
@@ -169,10 +171,10 @@ local decibel = {
 		return dB <= self.min and 0 or math.exp(dB * self.k)
 	end,
 	to_string = function(self, dB, fmt)
-		return (dB <= self.min and "-∞" or string.format("%+"..fmt, dB)).." dB"
+		return (dB <= self.min and "-∞" or ("%+"..fmt):format(dB)).." dB"
 	end,
 	to_string_any = function(self, dB, fmt)
-		return (dB == -math.huge and "-∞" or string.format("%+"..fmt, dB)).." dB"
+		return (dB == -math.huge and "-∞" or ("%+"..fmt):format(dB)).." dB"
 	end,
 	k = math.log(10) / 60,
 	min = o.dBmin,
@@ -204,7 +206,7 @@ local linear = {
 		return lin ^ (1 / self.k)
 	end,
 	to_string = function(self, lin, fmt)
-		return string.format("%"..fmt, lin)
+		return ("%"..fmt):format(lin)
 	end,
 	k = 3,
 	min = 0,
@@ -233,7 +235,7 @@ local cubic = {
 	from_volume = linear.to_volume,
 	to_volume = linear.from_volume,
 	to_string = function(self, cube, fmt)
-		return string.format("%"..fmt, cube).."³"
+		return ("%"..fmt):format(cube).."³"
 	end,
 	k = 1,
 	min = 0,

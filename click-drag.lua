@@ -29,11 +29,12 @@ local function drag(_, pos)
 	if state.dif ~= dif then
 		state.dif = dif
 		local dB = math.min(state.dB + (dif * o.step), dBmax)
-		local s = (dB <= dBmin and "-∞" or string.format("%+"..o.fmt, dB)).." dB"
+		local s = (dB <= dBmin and "-∞" or ("%+"..o.fmt):format(dB)).." dB"
 		mp.commandv("osd-bar", "set", "ao-volume",
 			dB <= dBmin and 0 or 10 ^ (2 + dB / k))
-		mp.osd_message(string.format("AO-Volume: %s%s", s,
-			mp.get_property_bool("ao-mute") and " (Muted)" or ""), 1)
+		mp.osd_message(("AO-Volume: %s%s"):format(
+			s, mp.get_property_bool("ao-mute") and " (Muted)" or ""
+		), 1)
 	end
 end
 

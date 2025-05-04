@@ -8,9 +8,10 @@ local sfmax = 60 * math.log(mp.get_property_number("volume-max", 100) / 100, 10)
 local aof = (mp.get_property("ao") == "pulse") and 60 or 20
 
 local function print_dB(ao, dB, fmt)
-	dB = (dB <= dBmin) and "-∞" or string.format("%+"..fmt, dB)
-	mp.osd_message(string.format(ao:upper().."Volume: %s dB%s", dB,
-		mp.get_property_bool(ao.."mute") and " (Muted)" or ""), o.duration)
+	dB = (dB <= dBmin) and "-∞" or ("%+"..fmt):format(dB)
+	mp.osd_message((ao:upper().."Volume: %s dB%s"):format(
+		dB, mp.get_property_bool(ao.."mute") and " (Muted)" or ""
+	), o.duration)
 end
 
 local function round(x)
