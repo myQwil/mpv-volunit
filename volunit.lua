@@ -3,10 +3,10 @@ local o = {
 	duration = 1,       -- display duration in seconds
 	custom_bar = false, -- display a volume bar that linearly reflects dB values
 }
-(require 'mp.options').read_options(o)
-local osd = o.custom_bar and 'no-osd' or 'osd-bar'
-local ao_is_cubic = (mp.get_property('ao') == 'pulse')
-local volmax = mp.get_property_number('volume-max', 100) / 100
+(require "mp.options").read_options(o)
+local osd = o.custom_bar and "no-osd" or "osd-bar"
+local ao_is_cubic = (mp.get_property("ao") == "pulse")
+local volmax = mp.get_property_number("volume-max", 100) / 100
 
 local function round(x)
 	x = x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)
@@ -14,39 +14,39 @@ local function round(x)
 end
 
 local function msg(ao, s)
-	mp.osd_message(string.format(ao:upper()..'Volume: %s%s', s,
-		mp.get_property_bool(ao..'mute') and ' (Muted)' or ''), o.duration)
+	mp.osd_message(string.format(ao:upper().."Volume: %s%s", s,
+		mp.get_property_bool(ao.."mute") and " (Muted)" or ""), o.duration)
 end
 
 local function translate(scale, op, v, prec)
-	local ao = scale.is_ao and 'ao-' or ''
-	local prop = ao..'volume'
+	local ao = scale.is_ao and "ao-" or ""
+	local prop = ao.."volume"
 	local vol = mp.get_property_number(prop)
 	if not vol then
 		return
 	end
 
 	local value, fmt
-	if op == 'add' then
-		prec = prec or v or ''
-		local i = prec:find('%.')
-		fmt = i and ('.'..prec:sub(i + 1):len()..'f') or 'g'
+	if op == "add" then
+		prec = prec or v or ""
+		local i = prec:find("%.")
+		fmt = i and ("."..prec:sub(i + 1):len().."f") or "g"
 		prec = tonumber(prec)
 		prec = (prec and prec ~= 0) and math.abs(prec) or 1
 
 		value = math.max(scale.min, scale:from_volume(vol / 100)) + (tonumber(v) or 0)
 		value = math.min(math.max(scale.min, round(value / prec) * prec), scale.max)
-	elseif op == 'set' then
-		fmt = prec or 'g'
-		value = v == '-inf' and -math.huge or tonumber(v) or 0
+	elseif op == "set" then
+		fmt = prec or "g"
+		value = v == "-inf" and -math.huge or tonumber(v) or 0
 	else
-		mp.commandv(osd, 'add', prop, 0)
+		mp.commandv(osd, "add", prop, 0)
 		value = scale:from_volume(vol / 100)
-		msg(ao, scale:to_string_any(value, op or 'g'))
+		msg(ao, scale:to_string_any(value, op or "g"))
 		return math.min(math.max(scale.min, value), scale.max)
 	end
 
-	mp.commandv(osd, 'set', prop, scale:to_volume(value) * 100)
+	mp.commandv(osd, "set", prop, scale:to_volume(value) * 100)
 	msg(ao, scale:to_string(value, fmt))
 	return value
 end
@@ -56,15 +56,15 @@ end
 ---------------------------------- Custom Bar ----------------------------------
 local perform
 if o.custom_bar then
-	local assdraw = require('mp.assdraw')
+	local assdraw = require("mp.assdraw")
 	local bar = {
-		osd = mp.create_osd_overlay('ass-events'),
+		osd = mp.create_osd_overlay("ass-events"),
 		color = {
-			font = '1cH000000\\3cH808080',
-			back = '1aHD0\\1cHFFFFFF',
-			pos  = '3cHFFFFFF',
-			max  = '3aH98\\3cHFFFF00',
-			line = '1aHFF\\3cH808080',
+			font = "1cH000000\\3cH808080",
+			back = "1aHD0\\1cHFFFFFF",
+			pos  = "3cHFFFFFF",
+			max  = "3aH98\\3cHFFFF00",
+			line = "1aHFF\\3cH808080",
 		},
 		bord = 4,
 		w=0, h=0, x=0, y=0,
@@ -87,7 +87,7 @@ if o.custom_bar then
 		bar.sy = bar.y + bar.h * 0.5  -- vertically centered with bar
 	end, true)
 
-	mp.observe_property('osd-dimensions', 'native', function(_, win)
+	mp.observe_property("osd-dimensions", "native", function(_, win)
 		bar.to_dimen:kill()
 		bar.win_w, bar.win_h = win.w, win.h
 		if bar.win_h ~= 0 then
@@ -105,7 +105,7 @@ if o.custom_bar then
 	end
 
 	local function ass_draw(ass, fn, bord, color, x, y, w, h)
-		ass:append(string.format('\n{\\bord%g\\%s\\pos(%g,%g)}', bord, color, x, y))
+		ass:append(string.format("\n{\\bord%g\\%s\\pos(%g,%g)}", bord, color, x, y))
 		ass:draw_start()
 		fn(ass, w, h)
 		ass:draw_stop()
@@ -123,8 +123,8 @@ if o.custom_bar then
 		local pos0 = (w - bord) * normalized(scale, scale.full) + half
 
 		local draw = assdraw.ass_new()
-		draw:append(string.format('{\\an6\\bord%g\\%s\\pos(%g,%g)'
-			..'\\fnmpv-osd-symbols}', bord, color.font, self.sx, self.sy))
+		draw:append(string.format("{\\an6\\bord%g\\%s\\pos(%g,%g)"
+			.."\\fnmpv-osd-symbols}", bord, color.font, self.sx, self.sy))
 
 		ass_draw(draw, rect, 0, color.back, x, y, w, h)        -- back area
 		ass_draw(draw, rect, 0, scale.color, x, y, pos, h)     -- filled area
@@ -169,16 +169,16 @@ local decibel = {
 		return dB <= self.min and 0 or math.exp(dB * self.k)
 	end,
 	to_string = function(self, dB, fmt)
-		return (dB <= self.min and '-∞' or string.format('%+'..fmt, dB))..' dB'
+		return (dB <= self.min and "-∞" or string.format("%+"..fmt, dB)).." dB"
 	end,
 	to_string_any = function(self, dB, fmt)
-		return (dB == -math.huge and '-∞' or string.format('%+'..fmt, dB))..' dB'
+		return (dB == -math.huge and "-∞" or string.format("%+"..fmt, dB)).." dB"
 	end,
 	k = math.log(10) / 60,
 	min = o.dBmin,
 	full = 0,
 	is_ao = false,
-	color = '1cH000020',
+	color = "1cH000020",
 }
 decibel.max = decibel:from_volume(volmax)
 
@@ -188,9 +188,9 @@ local decibel_ao = setmetatable({
 	is_ao = true,
 }, { __index = decibel })
 
-mp.register_script_message('dB',
+mp.register_script_message("dB",
 	function(op, v, prec) perform(decibel, op, v, prec) end)
-mp.register_script_message('ao-dB',
+mp.register_script_message("ao-dB",
 	function(op, v, prec) perform(decibel_ao, op, v, prec) end)
 
 
@@ -204,13 +204,13 @@ local linear = {
 		return lin ^ (1 / self.k)
 	end,
 	to_string = function(self, lin, fmt)
-		return string.format('%'..fmt, lin)
+		return string.format("%"..fmt, lin)
 	end,
 	k = 3,
 	min = 0,
 	full = 1,
 	is_ao = false,
-	color = '1cH002000',
+	color = "1cH002000",
 }
 linear.max = linear:from_volume(volmax)
 linear.to_string_any = linear.to_string
@@ -221,9 +221,9 @@ local linear_ao = setmetatable({
 	is_ao = true,
 }, { __index = linear })
 
-mp.register_script_message('linear',
+mp.register_script_message("linear",
 	function(op, v, prec) perform(linear, op, v, prec) end)
-mp.register_script_message('ao-linear',
+mp.register_script_message("ao-linear",
 	function(op, v, prec) perform(linear_ao, op, v, prec) end)
 
 
@@ -233,14 +233,14 @@ local cubic = {
 	from_volume = linear.to_volume,
 	to_volume = linear.from_volume,
 	to_string = function(self, cube, fmt)
-		return string.format('%'..fmt, cube)..'³'
+		return string.format("%"..fmt, cube).."³"
 	end,
 	k = 1,
 	min = 0,
 	max = volmax,
 	full = 1,
 	is_ao = false,
-	color = '1cH200000',
+	color = "1cH200000",
 }
 cubic.to_string_any = cubic.to_string
 
@@ -250,7 +250,7 @@ local cubic_ao = setmetatable({
 	is_ao = true,
 }, { __index = cubic })
 
-mp.register_script_message('cubic',
+mp.register_script_message("cubic",
 	function(op, v, prec) perform(cubic, op, v, prec) end)
-mp.register_script_message('ao-cubic',
+mp.register_script_message("ao-cubic",
 	function(op, v, prec) perform(cubic_ao, op, v, prec) end)
